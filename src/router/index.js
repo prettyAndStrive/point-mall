@@ -7,10 +7,12 @@ import ProductList from '@/views/ProductList.vue'
 import ProductDetail from '@/views/ProductDetail.vue'
 import Cart from '@/views/Cart.vue'
 import Profile from '@/views/Profile.vue'
+import AdminOrderManage from '@/views/AdminOrderManage.vue'
 
 Vue.use(Router)
 
 const router = new Router({
+  mode: 'history',
   routes: [
     { path: '/login', name: 'Login', component: Login },
     { path: '/register', name: 'Register', component: Register },
@@ -18,7 +20,8 @@ const router = new Router({
     { path: '/products', name: 'ProductList', component: ProductList, meta: { requiresAuth: true } },
     { path: '/product/:id', name: 'ProductDetail', component: ProductDetail, meta: { requiresAuth: true } },
     { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
-    { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } }
+    { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
+    { path: '/admin/orders', name: 'AdminOrderManage', component: AdminOrderManage, meta: { requiresAuth: true } },
   ]
 })
 

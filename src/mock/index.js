@@ -34,6 +34,7 @@ let cartItems = [
 const orders = [
   { id: 20231001, productName: '定制马克杯', costPoints: 500, status: '已完成', createTime: '2023-10-01 10:00:00' }
 ]
+const logisticsTracks = {}
 
 // 辅助函数：提取 URL 最后的数字 ID
 const getIdFromUrl = (url) => {
@@ -200,7 +201,7 @@ export default function(config) {
           id: Date.now(),
           productName: cartItems.map(i => i.productName).join(','),
           costPoints: totalCost,
-          status: '已完成',
+          status: '待发货',
           createTime: new Date().toLocaleString()
         });
         cartItems = [];
@@ -208,8 +209,21 @@ export default function(config) {
       }
 
       // 13. 获取订单列表
-      if (url.includes('/orders') && method === 'get') {
+      if (url.includes('/orders') && method === 'get' && !url.includes('/logistics')) {
         return resolve({ status: 200, data: { code: 200, data: orders } });
+      }
+
+      if (url.match(/\/orders\/\d+\/cancel-requests$/) && method === 'post') {
+        const id = getIdFromUrl(url.replace('/cancel-requests', ''));
+        const order = orders.find(item => item.id === id);
+        if (!order || order.status !== '待发货') return resolve({ status: 400, data: { code: 400, msg: '仅待发货订单可以申请取消' } });
+        order.cancelRequested = true;
+        return resolve({ status: 200, data: { code: 200, data: null } });
+      }
+
+      if (url.match(/\/orders\/\d+\/logistics$/) && method === 'get') {
+        const id = getIdFromUrl(url.replace('/logistics', ''));
+        return resolve({ status: 200, data: { code: 200, data: logisticsTracks[id] || [] } });
       }
 
       if (url.includes('/order/list') && method === 'get') {
