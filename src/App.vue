@@ -1,11 +1,11 @@
 <template>
   <div id="app">
     <!-- 只有在登录和注册页不显示导航栏 -->
-    <el-container v-if="$route.name !== 'Login' && $route.name !== 'Register'" style="height: 100vh">
+    <el-container v-if="$route.name !== 'Login' && $route.name !== 'Register'" class="app-layout">
       <!-- 顶部导航 -->
       <el-header class="header">
         <div class="logo" @click="$router.push('/')">积分商城</div>
-        <el-menu :default-active="$route.path" mode="horizontal" router background-color="#fff" text-color="#333" active-text-color="#409EFF">
+        <el-menu class="main-nav" :default-active="$route.path" mode="horizontal" router>
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item index="/products">积分商品</el-menu-item>
         </el-menu>
@@ -26,14 +26,18 @@
       </el-header>
 
       <!-- 主体内容渲染区 -->
-      <el-main>
-        <router-view/>
+      <el-main class="app-main">
+        <transition name="fade-page" mode="out-in">
+          <router-view/>
+        </transition>
       </el-main>
     </el-container>
 
     <!-- 登录和注册页全屏显示，不带导航栏 -->
     <div v-else>
-      <router-view/>
+      <transition name="fade-page" mode="out-in">
+        <router-view/>
+      </transition>
     </div>
   </div>
 </template>
@@ -91,18 +95,36 @@ export default {
 </script>
 
 <style>
-/* 全局样式 */
-body { margin: 0; padding: 0; font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; }
-
-.header { 
+.app-layout { min-height: 100vh; background: var(--pm-bg); }
+.header {
+  position: sticky;
+  top: 0;
+  height: 72px !important;
+  padding: 0 max(24px, calc((100vw - 1400px) / 2));
   display: flex; 
   align-items: center; 
-  justify-content: space-between; 
-  background: #fff; 
-  box-shadow: 0 2px 4px rgba(0,0,0,.1); 
-  z-index: 999;
+  justify-content: flex-start;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 4px 18px rgba(31, 57, 88, .06);
+  backdrop-filter: blur(16px);
+  z-index: 100;
 }
-.logo { font-size: 20px; font-weight: bold; color: #409EFF; cursor: pointer; margin-right: 20px;}
-.user-info { display: flex; align-items: center; gap: 20px; }
-.el-dropdown-link { cursor: pointer; color: #409EFF; }
+.logo { color: var(--pm-primary); cursor: pointer; font-size: 22px; font-weight: 800; letter-spacing: -.04em; margin-right: 40px; }
+.main-nav { border-bottom: 0; background: transparent; }
+.main-nav.el-menu--horizontal > .el-menu-item { height: 72px; line-height: 72px; padding: 0 18px; color: var(--pm-text-secondary); border-bottom: 3px solid transparent; }
+.main-nav.el-menu--horizontal > .el-menu-item:hover { color: var(--pm-primary); background: transparent; }
+.main-nav.el-menu--horizontal > .el-menu-item.is-active { color: var(--pm-primary); border-bottom-color: var(--pm-primary); }
+.user-info { display: flex; align-items: center; gap: 20px; margin-left: auto; }
+.user-info .el-button.is-circle { width: 40px; height: 40px; color: var(--pm-primary); border-color: #d6e8ff; background: var(--pm-primary-soft); }
+.el-dropdown-link { cursor: pointer; color: var(--pm-text); font-weight: 600; }
+.app-main { padding: 24px 0 48px; overflow: visible; }
+
+@media (max-width: 768px) {
+  .header { height: 60px !important; padding: 0 12px; }
+  .logo { margin-right: 8px; font-size: 18px; }
+  .main-nav.el-menu--horizontal > .el-menu-item { height: 60px; line-height: 60px; padding: 0 10px; font-size: 13px; }
+  .user-info { gap: 10px; }
+  .el-dropdown-link { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .app-main { padding: 16px 0 32px; }
+}
 </style>

@@ -1,7 +1,8 @@
 <template>
   <div class="login-container">
-    <el-card class="login-card">
-      <h2>积分商城 - 登录</h2>
+    <div class="auth-orb auth-orb-one"></div><div class="auth-orb auth-orb-two"></div>
+    <el-card class="login-card" shadow="never">
+      <div class="auth-brand"><span class="brand-mark"><i class="el-icon-present"></i></span><div><h2>欢迎回来</h2><p>登录 PointMall，兑换心仪好物</p></div></div>
       <el-form :model="loginForm" :rules="rules" ref="loginForm">
         <el-form-item prop="username">
           <el-input v-model="loginForm.username" prefix-icon="el-icon-user" placeholder="用户名"></el-input>
@@ -9,7 +10,7 @@
         <el-form-item prop="password">
           <el-input v-model="loginForm.password" prefix-icon="el-icon-lock" type="password" placeholder="密码"></el-input>
         </el-form-item>
-        <el-button type="primary" style="width: 100%" @click="handleLogin" :loading="loading">登录</el-button>
+        <el-button type="primary" class="auth-submit" @click="handleLogin" :loading="loading">登录</el-button>
         <p class="link-text">还没有账号？<router-link to="/register">立即注册</router-link></p>
       </el-form>
     </el-card>
@@ -62,33 +63,12 @@ export default {
 </script>
 
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 渐变背景 */
-}
-
-.login-card {
-  width: 400px;
-  border-radius: 15px; /* 加大圆角 */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* 增加立体阴影 */
-  background-color: rgba(255, 255, 255, 0.9); /* 半透明白色背景 */
-  backdrop-filter: blur(10px); /* 毛玻璃模糊效果 */
-  border: none; /* 去掉 ElementUI 默认的灰色边框 */
-  overflow: hidden; /* 防止圆角被内部元素撑破 */
-}
-
-/* 使用深度选择器，强制修改 ElementUI 卡片内部主体的样式 */
-.login-card ::v-deep .el-card__body {
-  padding: 30px 40px; /* 调整内部表单的间距，让表单不那么贴边 */
-}
-
-.link-text { 
-  text-align: center; 
-  margin-top: 15px; 
-  font-size: 14px; 
-}
+.login-container { position: relative; display: flex; min-height: 100vh; padding: 24px; overflow: hidden; align-items: center; justify-content: center; background: radial-gradient(circle at 10% 15%, #e1f0ff 0, transparent 32%), linear-gradient(135deg, #eef6ff 0%, #f8fbff 50%, #e6f1ff 100%); }
+.login-card { position: relative; z-index: 1; width: min(100%, 440px); border: 1px solid rgba(255, 255, 255, .85); border-radius: var(--pm-radius-lg); box-shadow: 0 22px 60px rgba(22, 79, 152, .16); background-color: rgba(255, 255, 255, .86); backdrop-filter: blur(18px); }
+.login-card ::v-deep .el-card__body { padding: 40px; }
+.auth-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }.brand-mark { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 14px; color: #fff; background: linear-gradient(135deg, var(--pm-primary), #69a8ff); box-shadow: 0 8px 20px rgba(22, 119, 255, .25); font-size: 22px; }.auth-brand h2 { margin: 0; color: var(--pm-text); font-size: 24px; }.auth-brand p { margin: 3px 0 0; color: var(--pm-text-secondary); font-size: 13px; }
+.login-card ::v-deep .el-form-item { margin-bottom: 22px; }.login-card ::v-deep .el-input__inner { height: 44px; }.auth-submit { width: 100%; height: 44px; font-size: 16px; }.link-text { margin: 20px 0 0; color: var(--pm-text-secondary); text-align: center; font-size: 14px; }
+.auth-orb { position: absolute; width: 340px; height: 340px; border-radius: 50%; filter: blur(4px); opacity: .55; }.auth-orb-one { top: -170px; right: 8%; background: #a3d3ff; }.auth-orb-two { bottom: -190px; left: 4%; background: #c6ddff; }
+@media (max-width: 480px) { .login-container { padding: 16px; }.login-card ::v-deep .el-card__body { padding: 28px 24px; } }
 </style>
 

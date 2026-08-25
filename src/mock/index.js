@@ -13,7 +13,17 @@ const products = [
 ]
 
 // 模拟用户数据
-const userInfo = { id: 1, username: '测试用户', points: 10000 }
+const userInfo = {
+  id: 1,
+  username: '测试用户',
+  nickName: '积分达人',
+  sex: 2,
+  age: 26,
+  address: '湖北省武汉市洪山区',
+  avatarImage: '',
+  tags: ['数码爱好者', '积分达人'],
+  points: 10000
+}
 
 // 模拟购物车数据
 let cartItems = [
@@ -86,6 +96,25 @@ export default function(config) {
         return resolve({ status: 200, data: { code: 200, data: userInfo } });
       }
 
+      if (url.includes('/user/info') && method === 'get') {
+        return resolve({ status: 200, data: { code: 200, data: userInfo } });
+      }
+
+      if (url.includes('/user/update') && method === 'post') {
+        const errors = {};
+        if (!/^[\u4E00-\u9FA5A-Za-z0-9_]{2,20}$/.test(String(parsedData.nickName || ''))) errors.nickName = '昵称仅支持2至20位中文、字母、数字或下划线';
+        if (!Number.isInteger(parsedData.age) || parsedData.age < 1 || parsedData.age > 120) errors.age = '年龄应在1至120之间';
+        if (![0, 1, 2].includes(parsedData.sex)) errors.sex = '性别参数不合法';
+        if ((parsedData.tags || []).length > 10) errors.tags = '最多设置10个标签';
+        if (Object.keys(errors).length) return resolve({ status: 400, data: { code: 400, msg: '请求参数不合法', errors } });
+        userInfo.nickName = parsedData.nickName;
+        userInfo.sex = parsedData.sex;
+        userInfo.age = parsedData.age;
+        userInfo.address = parsedData.address || '';
+        userInfo.tags = Array.isArray(parsedData.tags) ? parsedData.tags : [];
+        return resolve({ status: 200, data: { code: 200, data: userInfo } });
+      }
+
       // 4. 获取热门商品 (旧接口，保留兼容)
       if (url.includes('/products/hot') && method === 'get') {
         return resolve({ status: 200, data: { code: 200, data: products.filter(p => p.isHot) } });
@@ -93,7 +122,15 @@ export default function(config) {
 
       // 5. 获取商品列表
       if (url.includes('/products') && method === 'get' && !url.includes('/hot') && !url.includes('/home')) {
-        return resolve({ status: 200, data: { code: 200, data: { list: products, total: products.length } } });
+        const params = config.params || {};
+        const keyword = String(params.search || '').trim().toLowerCase();
+        const page = Math.max(Number(params.page) || 1, 1);
+        const size = Math.max(Number(params.size) || products.length, 1);
+        const filteredProducts = keyword
+          ? products.filter(product => `${product.name}${product.description}${product.category}`.toLowerCase().includes(keyword))
+          : products;
+        const start = (page - 1) * size;
+        return resolve({ status: 200, data: { code: 200, data: { list: filteredProducts.slice(start, start + size), total: filteredProducts.length } } });
       }
 
       // 6. 获取商品详情
@@ -103,9 +140,17 @@ export default function(config) {
         if (product) return resolve({ status: 200, data: { code: 200, data: product } });
       }
 
+      // 6.1 获取商品规格
+      if (url.match(/\/products\/\d+\/skus$/) && method === 'get') {
+        const id = Number(url.split('/')[2]);
+        const product = products.find(item => item.id === id);
+        return resolve({ status: 200, data: { code: 200, data: product ? [{ id: product.id, skuCode: `DEFAULT-${product.id}`, skuSpec: '默认规格', points: product.points, stock: product.stock }] : [] } });
+      }
+
       // 7. 获取购物车数量
       if (url.includes('/cart/count') && method === 'get') {
-        const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+        // 购物车数组按 SKU 合并，长度就是去重后的商品种类数。
+        const count = new Set(cartItems.map(item => item.skuId || item.productId)).size;
         return resolve({ status: 200, data: { code: 200, data: { count } } });
       }
 
@@ -115,7 +160,7 @@ export default function(config) {
       }
 
       // 9. 添加到购物车
-      if (url === '/api/cart' && method === 'post') {
+      if ((url === '/cart' || url === '/api/cart') && method === 'post') {
         const { productId, quantity } = parsedData;
         const product = products.find(p => p.id === Number(productId));
         if (!product) return resolve({ status: 400, data: { message: '商品不存在' } });
@@ -165,6 +210,17 @@ export default function(config) {
       // 13. 获取订单列表
       if (url.includes('/orders') && method === 'get') {
         return resolve({ status: 200, data: { code: 200, data: orders } });
+      }
+
+      if (url.includes('/order/list') && method === 'get') {
+        const status = (config.params || {}).status || 'all';
+        const filtered = orders.filter(order => {
+          if (status === 'completed') return order.status === '已完成';
+          if (status === 'unfinished') return !['已完成', '已取消'].includes(order.status);
+          if (status === 'deleted') return order.deleted === true;
+          return order.deleted !== true;
+        });
+        return resolve({ status: 200, data: { code: 200, data: filtered } });
       }
 
       // 兜底：如果都没有匹配上，返回空数据，防止报错
