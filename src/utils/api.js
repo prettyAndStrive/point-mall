@@ -4,7 +4,8 @@ import router from '../router'
 import mockHandler from '../mock/index' // 引入 mock
 
 const service = axios.create({
-  baseURL: '/api',
+  // 开发环境走 vue.config.js 的本地代理；生产环境由部署平台注入完整 API 地址。
+  baseURL: process.env.VUE_APP_API_BASE_URL || '/api',
   timeout: 5000
 })
 

@@ -48,7 +48,7 @@ export default {
     changeTab(tab) { if (this.activeTab !== tab) { this.activeTab = tab; this.fetchOrders() } },
     startEdit() { this.serverErrors = {}; this.form = JSON.parse(JSON.stringify(this.userInfo)); this.editing = true },
     cancelEdit() { this.serverErrors = {}; this.editing = false },
-    addTag() { const tag = this.tagInput.trim(); if (!tag) return; if (this.form.tags.includes(tag)) return this.$message.warning('标签已存在'); if (this.form.tags.length >= 10) return this.$message.warning('最多设置10个标签'); this.form.tags.push(tag); this.tagInput = '' },
+    addTag() { const tag = this.tagInput.trim(); if (!tag) return; if (this.form.tags.includes(tag)) return this.$message.warning('标签已存在'); if (this.form.tags.length >= 20) return this.$message.warning('最多设置20个标签'); this.form.tags.push(tag); this.tagInput = '' },
     removeTag(index) { this.form.tags.splice(index, 1) },
     async applyCancel(order) { try { await this.fetchOrders(); const currentOrder = this.orders.find(item => item.id === order.id); if (!currentOrder || currentOrder.status !== '待发货') { this.$message.warning('订单状态已更新，当前不可申请取消'); return } const result = await this.$prompt('请输入取消原因', '申请取消', { inputPattern: /\S+/, inputErrorMessage: '取消原因不能为空' }); await api.post(`/orders/${order.id}/cancel-requests`, { reason: result.value }); this.$message.success('取消申请已提交'); await this.fetchOrders() } catch (error) { if (error !== 'cancel') this.$message.error(error.response?.data?.msg || '提交失败') } },
     async showLogistics(order) { const res = await api.get(`/orders/${order.id}/logistics`); this.logisticsOrder = order; this.logisticsTracks = res.data; this.logisticsVisible = true },

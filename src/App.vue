@@ -13,12 +13,14 @@
           <el-badge :value="cartCount" class="item" type="danger" :hidden="cartCount === 0">
             <el-button icon="el-icon-shopping-cart-2" circle @click="$router.push('/cart')"></el-button>
           </el-badge>
-          <el-dropdown @command="handleCommand">
-            <span class="el-dropdown-link">
-              {{ userInfo.username }}<i class="el-icon-arrow-down el-icon--right"></i>
+          <el-dropdown trigger="click" @command="handleCommand">
+            <span class="el-dropdown-link user-menu-trigger">
+              <el-avatar :size="36" :src="userInfo.avatarImage" icon="el-icon-user-solid" />
+              <span>{{ userInfo.nickName || userInfo.username }}</span><i class="el-icon-arrow-down el-icon--right"></i>
             </span>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+              <el-dropdown-item command="change-password" divided>修改密码</el-dropdown-item>
               <el-dropdown-item command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
@@ -31,6 +33,25 @@
           <router-view/>
         </transition>
       </el-main>
+
+      <el-dialog title="修改密码" :visible.sync="changePasswordVisible" width="440px" :close-on-click-modal="false" @closed="resetPasswordForm">
+        <p class="password-dialog-tip">为保障账户安全，请先验证当前密码。</p>
+        <el-form ref="passwordForm" :model="passwordForm" :rules="passwordRules" label-position="top" @submit.native.prevent>
+          <el-form-item label="当前密码" prop="oldPassword">
+            <el-input v-model="passwordForm.oldPassword" type="password" show-password autocomplete="current-password" placeholder="请输入当前密码" />
+          </el-form-item>
+          <el-form-item label="新密码" prop="newPassword">
+            <el-input v-model="passwordForm.newPassword" type="password" show-password autocomplete="new-password" placeholder="请输入新密码" />
+          </el-form-item>
+          <el-form-item label="确认新密码" prop="confirmPassword">
+            <el-input v-model="passwordForm.confirmPassword" type="password" show-password autocomplete="new-password" placeholder="请再次输入新密码" @keyup.enter.native="submitPasswordChange" />
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="changePasswordVisible = false">取消</el-button>
+          <el-button type="primary" :loading="changingPassword" @click="submitPasswordChange">确认修改</el-button>
+        </span>
+      </el-dialog>
     </el-container>
 
     <!-- 登录和注册页全屏显示，不带导航栏 -->
@@ -49,7 +70,18 @@ export default {
   data() {
     return {
       userInfo: JSON.parse(localStorage.getItem('userInfo') || '{}'),
-      cartCount: 0
+      cartCount: 0,
+      changePasswordVisible: false,
+      changingPassword: false,
+      passwordForm: { oldPassword: '', newPassword: '', confirmPassword: '' },
+      passwordRules: {
+        oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
+        newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }],
+        confirmPassword: [{ required: true, validator: (rule, value, callback) => {
+          if (value !== this.passwordForm.newPassword) callback(new Error('两次输入的新密码不一致'))
+          else callback()
+        }, trigger: 'blur' }]
+      }
     }
   },
   created() {
@@ -82,6 +114,8 @@ export default {
     handleCommand(command) {
       if (command === 'profile') {
         this.$router.push('/profile')
+      } else if (command === 'change-password') {
+        this.changePasswordVisible = true
       } else if (command === 'logout') {
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
@@ -89,6 +123,34 @@ export default {
         this.cartCount = 0
         this.$router.push('/login')
       }
+    },
+    resetPasswordForm() {
+      this.passwordForm = { oldPassword: '', newPassword: '', confirmPassword: '' }
+      this.$nextTick(() => this.$refs.passwordForm && this.$refs.passwordForm.clearValidate())
+    },
+    submitPasswordChange() {
+      this.$refs.passwordForm.validate(async valid => {
+        if (!valid) return
+        if (!this.userInfo.id) {
+          this.$message.error('未获取到用户信息，请重新登录后再试')
+          return
+        }
+
+        this.changingPassword = true
+        try {
+          await api.put('/user/changePassword', {
+            userId: this.userInfo.id,
+            oldPassword: this.passwordForm.oldPassword,
+            newPassword: this.passwordForm.newPassword
+          })
+          this.$message.success('密码修改成功')
+          this.changePasswordVisible = false
+        } catch (error) {
+          // api 拦截器已统一展示服务端返回的错误信息。
+        } finally {
+          this.changingPassword = false
+        }
+      })
     }
   }
 }
@@ -117,6 +179,9 @@ export default {
 .user-info { display: flex; align-items: center; gap: 20px; margin-left: auto; }
 .user-info .el-button.is-circle { width: 40px; height: 40px; color: var(--pm-primary); border-color: #d6e8ff; background: var(--pm-primary-soft); }
 .el-dropdown-link { cursor: pointer; color: var(--pm-text); font-weight: 600; }
+.user-menu-trigger { display: flex; align-items: center; gap: 8px; }
+.user-menu-trigger .el-avatar { color: var(--pm-primary); background: var(--pm-primary-soft); }
+.password-dialog-tip { margin: -4px 0 20px; color: var(--pm-text-secondary); font-size: 13px; }
 .app-main { padding: 24px 0 48px; overflow: visible; }
 
 @media (max-width: 768px) {
@@ -124,7 +189,8 @@ export default {
   .logo { margin-right: 8px; font-size: 18px; }
   .main-nav.el-menu--horizontal > .el-menu-item { height: 60px; line-height: 60px; padding: 0 10px; font-size: 13px; }
   .user-info { gap: 10px; }
-  .el-dropdown-link { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .el-dropdown-link { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-menu-trigger { gap: 5px; }
   .app-main { padding: 16px 0 32px; }
 }
 </style>

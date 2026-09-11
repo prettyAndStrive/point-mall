@@ -24,6 +24,7 @@ const userInfo = {
   tags: ['数码爱好者', '积分达人'],
   points: 10000
 }
+let mockPassword = ''
 
 // 模拟购物车数据
 let cartItems = [
@@ -84,6 +85,7 @@ export default function(config) {
 
       // 1. 登录接口
       if (url.includes('/auth/login') && method === 'post') {
+        mockPassword = String(parsedData.password || '')
         return resolve({ status: 200, data: { code: 200, data: { token: 'fake-jwt-token-123', userInfo } } });
       }
 
@@ -106,7 +108,7 @@ export default function(config) {
         if (!/^[\u4E00-\u9FA5A-Za-z0-9_]{2,20}$/.test(String(parsedData.nickName || ''))) errors.nickName = '昵称仅支持2至20位中文、字母、数字或下划线';
         if (!Number.isInteger(parsedData.age) || parsedData.age < 1 || parsedData.age > 120) errors.age = '年龄应在1至120之间';
         if (![0, 1, 2].includes(parsedData.sex)) errors.sex = '性别参数不合法';
-        if ((parsedData.tags || []).length > 10) errors.tags = '最多设置10个标签';
+        if ((parsedData.tags || []).length > 20) errors.tags = '最多设置20个标签';
         if (Object.keys(errors).length) return resolve({ status: 400, data: { code: 400, msg: '请求参数不合法', errors } });
         userInfo.nickName = parsedData.nickName;
         userInfo.sex = parsedData.sex;
@@ -114,6 +116,14 @@ export default function(config) {
         userInfo.address = parsedData.address || '';
         userInfo.tags = Array.isArray(parsedData.tags) ? parsedData.tags : [];
         return resolve({ status: 200, data: { code: 200, data: userInfo } });
+      }
+
+      if (url.includes('/user/changePassword') && method === 'put') {
+        if (!String(parsedData.oldPassword || '').trim()) return resolve({ status: 400, data: { code: 400, msg: '原密码不能为空' } });
+        if (!String(parsedData.newPassword || '').trim()) return resolve({ status: 400, data: { code: 400, msg: '新密码不能为空' } });
+        if (mockPassword && parsedData.oldPassword !== mockPassword) return resolve({ status: 400, data: { code: 400, msg: '原密码错误或修改失败' } });
+        mockPassword = parsedData.newPassword;
+        return resolve({ status: 200, data: { code: 200, data: null, msg: '密码修改成功' } });
       }
 
       // 4. 获取热门商品 (旧接口，保留兼容)
